@@ -220,8 +220,6 @@ public class FlutterZipArchivePlugin implements MethodCallHandler {
 
 
     public String zip(String src, String dest, String passwd) {
-
-
         File srcFile = new File(src);
         dest = buildDestinationZipFilePath(srcFile, dest);
         ZipParameters parameters = new ZipParameters();
@@ -236,14 +234,17 @@ public class FlutterZipArchivePlugin implements MethodCallHandler {
             ZipFile zipFile = new ZipFile(dest);
             if (srcFile.isDirectory()) {
                 // 如果不创建目录的话,将直接把给定目录下的文件压缩到压缩文件,即没有目录结构
-
+                // ↑ 「ディレクトリが作成されない場合、指定されたディレクトリ内のファイルは圧縮ファイルに直接圧縮されます。つまり、ディレクトリ構造はありません。」
+                // という簡体字でした。
+                /* 元のコードこのままだと、親フォルダの名前の空フォルダが生成されてしまった
                 File[] subFiles = srcFile.listFiles();
                 ArrayList<File> temp = new ArrayList<File>();
                 Collections.addAll(temp, subFiles);
                 zipFile.addFiles(temp, parameters);
+                */
+                // フォルダごと圧縮するにはこうしないといけない
+                zipFile.createZipFileFromFolder(srcFile, parameters, false, 0);
                 return dest;
-
-
             } else {
                 zipFile.addFile(srcFile, parameters);
             }
