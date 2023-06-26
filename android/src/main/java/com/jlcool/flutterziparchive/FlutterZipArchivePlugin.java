@@ -1,5 +1,6 @@
 package com.jlcool.flutterziparchive;
 
+import android.content.Context;
 import android.os.AsyncTask;
 
 import net.lingala.zip4j.core.ZipFile;
@@ -17,6 +18,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import androidx.annotation.NonNull;
+
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -26,17 +31,41 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 /**
  * FlutterZipArchivePlugin
  */
-public class FlutterZipArchivePlugin implements MethodCallHandler {
+public class FlutterZipArchivePlugin implements MethodCallHandler, FlutterPlugin {
+    private Context context;
+    private MethodChannel methodChannel;
+
     /**
      * Plugin registration.
      */
+    @SuppressWarnings("deprecation")
     public static void registerWith(Registrar registrar) {
-        final MethodChannel channel = new MethodChannel(registrar.messenger(), "flutter_zip_archive");
-        channel.setMethodCallHandler(new FlutterZipArchivePlugin());
+//        final MethodChannel channel = new MethodChannel(registrar.messenger(), "flutter_zip_archive");
+//        channel.setMethodCallHandler(new FlutterZipArchivePlugin());
+        new FlutterZipArchivePlugin().onAttachedToEngine(registrar.context(), registrar.messenger());
     }
 
     @Override
-    public void onMethodCall(MethodCall call, Result result) {
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        onAttachedToEngine(binding.getApplicationContext(), binding.getBinaryMessenger());
+    }
+
+    private void onAttachedToEngine(Context applicationContext, BinaryMessenger messenger) {
+        this.context = applicationContext;
+
+        methodChannel = new MethodChannel(messenger, "flutter_zip_archive");
+        methodChannel.setMethodCallHandler(this);
+    }
+
+    @Override
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        context = null;
+        methodChannel.setMethodCallHandler(null);
+        methodChannel = null;
+    }
+
+    @Override
+    public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
         switch (call.method) {
             case "zip":
                 new ZipTask(call, result).execute();

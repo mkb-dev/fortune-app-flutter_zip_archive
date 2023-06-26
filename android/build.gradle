@@ -3,17 +3,20 @@ version '1.0-SNAPSHOT'
 buildscript {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.1.0'
+        classpath 'com.android.tools.build:gradle:7.4.2'
     }
 }
 rootProject.allprojects {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
+        maven {
+            url 'https://dl.google.com/android/maven2'
+        }
     }
 }
 def localProperties = new Properties()
@@ -29,7 +32,7 @@ if (flutterRoot == null) {
 }
 apply plugin: 'com.android.library'
 android {
-    compileSdkVersion 28
+    compileSdkVersion 33
 
     defaultConfig {
         minSdkVersion 16
