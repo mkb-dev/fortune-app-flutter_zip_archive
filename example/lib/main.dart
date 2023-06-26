@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_zip_archive/flutter_zip_archive.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
 
 void main() => runApp(MyApp());
 
@@ -15,11 +14,15 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late TextEditingController _controller;
+  bool _existZipFile = false;
+  static const String zipFileName = '123.zip';
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: "1234");
+
+    _checkZipFile();
   }
 
   @override
@@ -46,10 +49,13 @@ class _MyAppState extends State<MyApp> {
                 onPressed: _selectFile,
                 child: Text("压缩"),
               ),
-              MaterialButton(
-                color: Theme.of(context).primaryColor,
-                onPressed: _unzip,
-                child: Text("解压"),
+              Visibility(
+                visible: _existZipFile,
+                child: MaterialButton(
+                  color: Theme.of(context).primaryColor,
+                  onPressed: _unzip,
+                  child: Text("解压"),
+                ),
               )
             ],
           ),
@@ -58,21 +64,53 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  // zipファイルがあるかをチェックする
+  void _checkZipFile() {
+    Directory _cacheDir = Directory.systemTemp;
+    final exist = File("${_cacheDir.path}/$zipFileName").existsSync();
+    setState(() {
+      _existZipFile = exist;
+    });
+  }
+
   Future _selectFile() async {
-    var file = await ImagePicker().pickImage(source: ImageSource.gallery);
-    Directory _cacheDir = await getTemporaryDirectory();
+    XFile? file;
+    try {
+      file = await ImagePicker().pickImage(source: ImageSource.gallery);
+    } catch (e) {
+      print(e);
+      print('iPhoneシミュレーターだとできないことがある');
+      return;
+    }
+
+    Directory _cacheDir = Directory.systemTemp;
     if (file == null) {
       return;
     }
+
+    // testフォルダを作ってそこにピックアップした画像を入れる
+    final newPath = _cacheDir.path + "/test";
+    Directory(newPath).createSync();
+    // 画像名取得
+    final fileName = file.path.split('/').last;
+    File(file.path).copySync(newPath + '/' + fileName);
+
+    // 書き込む前に削除しておく
+    if (File(_cacheDir.path + "/$zipFileName").existsSync()) {
+      File(_cacheDir.path + "/$zipFileName").deleteSync();
+    }
+
     var _map = await FlutterZipArchive.zip(
-        _cacheDir.path + "/test", _cacheDir.path + "/123.zip", "1234");
+        newPath, _cacheDir.path + "/$zipFileName", _controller.text);
     print("_map:" + _map.toString());
+
+    _checkZipFile();
   }
 
   Future _unzip() async {
-    Directory _cacheDir = await getTemporaryDirectory();
+    Directory _cacheDir = Directory.systemTemp;
     var _map = await FlutterZipArchive.unzip(
-        _cacheDir.path + "/123.zip", _cacheDir.path, "1234");
+        _cacheDir.path + "/$zipFileName", _cacheDir.path, _controller.text);
     print("_map:" + _map.toString());
   }
 }
